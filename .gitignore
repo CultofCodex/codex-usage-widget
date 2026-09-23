@@ -1,0 +1,23 @@
+# Generated builds and release packages
+dist/
+release/
+
+# Personal runtime data
+usage-log.csv
+*.csv
+diagnostic*.json
+self-test*.txt
+
+# Local IDE and user settings
+.vs/
+.vscode/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Windows and temporary files
+Thumbs.db
+Desktop.ini
+*.tmp
+*.log
