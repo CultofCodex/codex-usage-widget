@@ -15,11 +15,12 @@ INSTALL
 1. Extract the entire ZIP into a permanent folder.
 2. Start Codex Desktop and confirm that you are signed in.
 3. Double-click CodexUsageWidget.exe.
-4. To start it automatically with Windows, right-click the widget and enable
-   "Launch with Windows" after placing it in its permanent folder.
+4. To start it automatically with Windows, right-click the widget and change
+   "Launch with Windows: Off" to "Launch with Windows: On" after placing it
+   in its permanent folder.
 
 Do not move the executable after enabling Windows startup. If you do move it,
-disable and re-enable "Launch with Windows" from the new location.
+switch "Launch with Windows" off and back on from the new location.
 
 USING THE WIDGET
 ----------------

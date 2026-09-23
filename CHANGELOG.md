@@ -13,3 +13,4 @@ Initial public release.
 - Adaptive refresh during active usage.
 - Background CSV usage logging for later analysis.
 - System-tray controls and optional launch at Windows sign-in.
+- Explicit Launch with Windows On/Off status that refreshes whenever the menu opens.

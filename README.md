@@ -45,7 +45,7 @@ The status checks read account information through the locally installed Codex a
 - Drag anywhere on the widget to move it.
 - Click **×** to hide it to the system tray.
 - Double-click the tray icon to restore it.
-- Right-click the widget or tray icon for refresh, always-on-top, launch-at-sign-in, reset-position, and exit controls.
+- Right-click the widget or tray icon for refresh, always-on-top, an explicit **Launch with Windows: On/Off** status, reset-position, and exit controls.
 
 ## Recent-draw calculation
 

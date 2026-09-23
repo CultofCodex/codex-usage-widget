@@ -1197,7 +1197,8 @@ namespace CodexUsageWidget
             refresh.Click += delegate { if (_client != null) _client.RequestRateLimits(); };
             _topMostMenu = new ToolStripMenuItem("Always on top") { Checked = true, CheckOnClick = true };
             _topMostMenu.CheckedChanged += delegate { TopMost = _topMostMenu.Checked; };
-            _startupMenu = new ToolStripMenuItem("Launch with Windows") { Checked = IsStartupEnabled(), CheckOnClick = true };
+            bool startupEnabled = IsStartupEnabled();
+            _startupMenu = new ToolStripMenuItem(FormatStartupMenuText(startupEnabled)) { Checked = startupEnabled, CheckOnClick = true };
             _startupMenu.CheckedChanged += delegate
             {
                 if (_suppressStartupToggle) return;
@@ -1208,6 +1209,7 @@ namespace CodexUsageWidget
                     _startupMenu.Checked = !wanted;
                     _suppressStartupToggle = false;
                 }
+                RefreshStartupMenuState();
             };
             var openUsage = new ToolStripMenuItem("Open Codex usage page");
             openUsage.Click += delegate { try { Process.Start("https://chatgpt.com/codex/settings/usage"); } catch { } };
@@ -1225,6 +1227,7 @@ namespace CodexUsageWidget
             _menu.Items.Add(resetPosition);
             _menu.Items.Add(new ToolStripSeparator());
             _menu.Items.Add(exit);
+            _menu.Opening += delegate { RefreshStartupMenuState(); };
             ContextMenuStrip = _menu;
 
             if (!_demoMode)
@@ -1471,6 +1474,21 @@ namespace CodexUsageWidget
             catch { return false; }
         }
 
+        internal static string FormatStartupMenuText(bool enabled)
+        {
+            return "Launch with Windows: " + (enabled ? "On" : "Off");
+        }
+
+        private void RefreshStartupMenuState()
+        {
+            if (_startupMenu == null) return;
+            bool enabled = IsStartupEnabled();
+            _suppressStartupToggle = true;
+            _startupMenu.Checked = enabled;
+            _startupMenu.Text = FormatStartupMenuText(enabled);
+            _suppressStartupToggle = false;
+        }
+
         private bool SetStartupEnabled(bool enabled)
         {
             try
@@ -1712,6 +1730,9 @@ namespace CodexUsageWidget
                 Assert(!allowanceBurn.CreditMode, "Included allowance is measured before credits", messages);
                 Assert(allowanceBurn.Level == "MODERATE", "A recent half-point allowance draw is moderate", messages);
                 Assert(UsageFormatting.CreditBalance(2290.05299488) == 2291.ToString("N0", CultureInfo.CurrentCulture), "Credit display matches desktop upward rounding", messages);
+                Assert(UsageWidgetForm.FormatStartupMenuText(true) == "Launch with Windows: On" &&
+                    UsageWidgetForm.FormatStartupMenuText(false) == "Launch with Windows: Off",
+                    "Startup menu states are explicit", messages);
 
                 var cadence = new AdaptiveRefreshCadence();
                 Assert(cadence.GetIntervalMs(now) == AdaptiveRefreshCadence.IdleIntervalMs, "Refresh cadence starts idle", messages);
