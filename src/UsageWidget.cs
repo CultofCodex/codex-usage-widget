@@ -122,6 +122,23 @@ namespace CodexUsageWidget
         }
     }
 
+    internal static class UsageWindow
+    {
+        public static List<UsageSample> Current(IList<UsageSample> samples)
+        {
+            if (samples == null || samples.Count == 0) return new List<UsageSample>();
+
+            int start = 0;
+            for (int i = 1; i < samples.Count; i++)
+            {
+                // A falling weekly percentage marks a new allowance window.
+                if (samples[i - 1].UsedPercent - samples[i].UsedPercent >= 0.5)
+                    start = i;
+            }
+            return samples.Skip(start).ToList();
+        }
+    }
+
     internal static class BurnCalculator
     {
         private static readonly Color Learning = Color.FromArgb(154, 132, 255);
@@ -130,10 +147,10 @@ namespace CodexUsageWidget
 
         public static BurnMetrics Calculate(IList<UsageSample> source, DateTime nowUtc)
         {
-            var samples = source
+            var samples = UsageWindow.Current(source
                 .Where(s => s.TimestampUtc >= nowUtc.AddDays(-7))
                 .OrderBy(s => s.TimestampUtc)
-                .ToList();
+                .ToList());
 
             if (samples.Count < 2)
                 return NewLearning();
@@ -699,6 +716,7 @@ namespace CodexUsageWidget
             _settingsPath = Path.Combine(_folder, "settings.ini");
             _csvLogger = new UsageCsvLogger(UsageCsvLogger.GetDefaultPath());
             LoadHistory();
+            LoadCsvHistory();
         }
 
         public List<UsageSample> Samples
@@ -811,6 +829,28 @@ namespace CodexUsageWidget
             }
             catch { }
         }
+
+        private void LoadCsvHistory()
+        {
+            try
+            {
+                string path = UsageCsvLogger.GetDefaultPath();
+                if (!File.Exists(path)) return;
+                DateTime cutoff = DateTime.UtcNow.AddDays(-7);
+                DateTime latest = _samples.Count > 0 ? _samples.Max(s => s.TimestampUtc) : DateTime.MinValue;
+                foreach (string line in File.ReadLines(path))
+                {
+                    UsageSample sample = UsageCsvLogger.ParseSample(line);
+                    if (sample == null || sample.TimestampUtc < cutoff || sample.TimestampUtc <= latest) continue;
+                    _samples.Add(sample);
+                    latest = sample.TimestampUtc;
+                }
+            }
+            catch
+            {
+                // An inaccessible or incomplete log must not prevent the widget from starting.
+            }
+        }
     }
 
     internal sealed class UsageCsvLogger
@@ -897,6 +937,23 @@ namespace CodexUsageWidget
             });
         }
 
+        public static UsageSample ParseSample(string line)
+        {
+            if (string.IsNullOrEmpty(line)) return null;
+            string[] fields = line.Split(',');
+            if (fields.Length != 9) return null;
+            DateTime timestamp;
+            double used;
+            if (!DateTime.TryParse(fields[1], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out timestamp) ||
+                !double.TryParse(fields[7], NumberStyles.Float, CultureInfo.InvariantCulture, out used) ||
+                double.IsNaN(used) || double.IsInfinity(used))
+                return null;
+            double credit;
+            double? credits = double.TryParse(fields[2], NumberStyles.Float, CultureInfo.InvariantCulture, out credit) &&
+                !double.IsNaN(credit) && !double.IsInfinity(credit) ? (double?)credit : null;
+            return new UsageSample { TimestampUtc = timestamp.ToUniversalTime(), UsedPercent = used, Credits = credits };
+        }
+
         private static string FormatNumber(double? value)
         {
             return value.HasValue ? value.Value.ToString("0.########", CultureInfo.InvariantCulture) : "";
@@ -940,7 +997,7 @@ namespace CodexUsageWidget
             }
 
             DateTime now = DateTime.UtcNow;
-            var recent = _samples.Where(s => s.TimestampUtc >= now.AddMinutes(-60)).OrderBy(s => s.TimestampUtc).ToList();
+            var recent = UsageWindow.Current(_samples.Where(s => s.TimestampUtc >= now.AddMinutes(-60)).OrderBy(s => s.TimestampUtc).ToList());
             if (recent.Count < 2)
             {
                 using (var pen = new Pen(Color.FromArgb(65, 72, 86), 1.5f * VisualScale))
@@ -1729,6 +1786,21 @@ namespace CodexUsageWidget
                 BurnMetrics allowanceBurn = BurnCalculator.Calculate(allowanceSamples, now);
                 Assert(!allowanceBurn.CreditMode, "Included allowance is measured before credits", messages);
                 Assert(allowanceBurn.Level == "MODERATE", "A recent half-point allowance draw is moderate", messages);
+                var resetSamples = new List<UsageSample>
+                {
+                    new UsageSample { TimestampUtc = now.AddMinutes(-3), UsedPercent = 100, Credits = 120 },
+                    new UsageSample { TimestampUtc = now.AddMinutes(-2.5), UsedPercent = 100, Credits = 100 },
+                    new UsageSample { TimestampUtc = now.AddMinutes(-2), UsedPercent = 0, Credits = 100 },
+                    new UsageSample { TimestampUtc = now.AddSeconds(-30), UsedPercent = 4, Credits = 100 },
+                    new UsageSample { TimestampUtc = now, UsedPercent = 5, Credits = 100 }
+                };
+                BurnMetrics afterReset = BurnCalculator.Calculate(resetSamples, now);
+                Assert(!afterReset.CreditMode && afterReset.RecentDraw == 1 && afterReset.Level == "MODERATE",
+                    "A new allowance window is not held in credit mode by an older credit draw", messages);
+                var currentGraphWindow = UsageWindow.Current(resetSamples);
+                Assert(currentGraphWindow.Count == 3 && !ActivitySeriesCalculator.IsCreditMode(currentGraphWindow) &&
+                    ActivitySeriesCalculator.Build(currentGraphWindow).Last() > 0,
+                    "The activity graph follows the new allowance window after a reset", messages);
                 Assert(UsageFormatting.CreditBalance(2290.05299488) == 2291.ToString("N0", CultureInfo.CurrentCulture), "Credit display matches desktop upward rounding", messages);
                 Assert(UsageWidgetForm.FormatStartupMenuText(true) == "Launch with Windows: On" &&
                     UsageWidgetForm.FormatStartupMenuText(false) == "Launch with Windows: Off",
@@ -1765,6 +1837,12 @@ namespace CodexUsageWidget
                     string[] drawFields = csvLines[2].Split(',');
                     Assert(drawFields.Length == 9, "CSV log writes all analysis columns", messages);
                     Assert(drawFields[4] == "2" && drawFields[6] == "40", "CSV log calculates interval draw and credits per minute", messages);
+                    UsageSample recovered = UsageCsvLogger.ParseSample(csvLines[2]);
+                    Assert(recovered != null && Math.Abs((recovered.TimestampUtc - csvDraw.TimestampUtc).TotalMilliseconds) < 1 &&
+                        recovered.UsedPercent == csvDraw.UsedPercent && recovered.Credits == csvDraw.Credits,
+                        "CSV observations can restore display history after restart", messages);
+                    Assert(UsageCsvLogger.ParseSample(csvLines[0]) == null && UsageCsvLogger.ParseSample("incomplete") == null,
+                        "CSV history recovery skips headers and incomplete rows", messages);
                     string[] gapFields = csvLines[3].Split(',');
                     Assert(gapFields[4] == "" && gapFields[6] == "", "CSV log does not invent a burst across an offline gap", messages);
                 }

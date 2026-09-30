@@ -1,0 +1,26 @@
+name: Windows release check
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build, test, and package
+        shell: pwsh
+        run: pwsh -NoProfile -ExecutionPolicy Bypass -File .\package-release.ps1
+      - name: Upload tested package
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-release
+          path: |
+            release/CodexUsageWidget-v*-windows.zip
+            release/CodexUsageWidget-v*-windows.zip.sha256.txt
+          if-no-files-found: error

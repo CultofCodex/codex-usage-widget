@@ -20,7 +20,7 @@ The application is portable: it has no installer and does not require administra
 
 ## Getting started
 
-1. Extract `CodexUsageWidget-v1.0.0-windows.zip` into a permanent folder.
+1. Extract the latest Windows release ZIP into a permanent folder.
 2. Open Codex Desktop and confirm that you are signed in.
 3. Double-click `CodexUsageWidget.exe`.
 4. Right-click the widget and enable **Launch with Windows** if wanted.
@@ -51,6 +51,8 @@ The status checks read account information through the locally installed Codex a
 
 Meaningful account-balance changes less than 90 seconds apart are grouped into one draw. The widget shows the accumulated credits and the highest comparable interval rate within that draw. After 90 seconds without another meaningful change, the badge returns to **Idle**, while the completed draw's cost, age, and peak rate remain visible.
 
+**Idle** means the account has not reported a measurable change; it does not mean no Codex task is running. When weekly usage is reported in whole percentage points, small tasks may not register until the next percentage point appears. ChatGPT conversations are outside this Codex usage meter.
+
 Fractional changes below half a credit are treated as account-settlement noise. Gaps longer than 45 seconds are not assigned an invented interval rate because the exact timing during the gap is unknown.
 
 | Level | Draw or interval value |
@@ -66,6 +68,8 @@ Before credits are in use, the widget falls back to changes in the weekly allowa
 ## CSV usage log
 
 While running, the widget appends observations to `usage-log.csv` beside the executable. Excel does not need to be open. The file includes local and UTC timestamps, raw credit balance, interval changes, credits per minute, and weekly allowance figures.
+
+On startup, the widget can also rebuild missing graph history from this CSV if its compact display-history file is out of date.
 
 Keep the CSV closed while collecting data so another application cannot lock it against writes.
 

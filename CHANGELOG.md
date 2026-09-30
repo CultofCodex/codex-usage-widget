@@ -2,6 +2,12 @@
 
 All notable changes to Codex Usage Widget will be recorded here.
 
+## 1.0.1 — 2026-09-30
+
+- Reset recent-draw and graph calculations to the current weekly allowance window so older credit spending cannot hide new allowance usage.
+- Restore missing seven-day display history from the local CSV log when the compact history file has fallen behind.
+- Clarify what the Idle indicator can and cannot detect.
+
 ## 1.0.0 — 2026-09-23
 
 Initial public release.
