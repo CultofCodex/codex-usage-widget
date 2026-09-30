@@ -35,7 +35,7 @@ The executable is not digitally code-signed, so Windows may identify it as comin
 - Current credit balance, using the same upward rounding as Codex Desktop.
 - Latest draw total and how long ago it ended.
 - Peak credits-per-minute rate within the latest draw.
-- A 60-minute activity graph with separate Idle, Light, Moderate, Heavy, and Very High colours.
+- A 60-minute account-meter graph with separate flat, Light, Moderate, Heavy, and Very High colours.
 - Faster three-second refreshes during activity, returning to a 15-second idle interval afterward.
 
 The status checks read account information through the locally installed Codex app server. They do not invoke a model or consume usage credits.
@@ -49,15 +49,17 @@ The status checks read account information through the locally installed Codex a
 
 ## Recent-draw calculation
 
-Meaningful account-balance changes less than 90 seconds apart are grouped into one draw. The widget shows the accumulated credits and the highest comparable interval rate within that draw. After 90 seconds without another meaningful change, the badge returns to **Idle**, while the completed draw's cost, age, and peak rate remain visible.
+Meaningful account-balance changes less than 90 seconds apart are grouped into one draw. The widget shows the accumulated credits and the highest comparable interval rate within that draw. After 90 seconds without another meaningful change, the badge returns to **No Change**, while the completed draw's cost, age, and peak rate remain visible.
 
-**Idle** means the account has not reported a measurable change; it does not mean no Codex task is running. When weekly usage is reported in whole percentage points, small tasks may not register until the next percentage point appears. ChatGPT conversations are outside this Codex usage meter.
+**No Change** means the account has not reported a measurable change; it does not mean no Codex task is running. When weekly usage is reported in whole percentage points, small tasks may not register until the next percentage point appears. ChatGPT conversations are outside this Codex usage meter.
 
 Fractional changes below half a credit are treated as account-settlement noise. Gaps longer than 45 seconds are not assigned an invented interval rate because the exact timing during the gap is unknown.
 
+The graph plots timed changes in the reported account meter, not local token activity. If the meter changes while the widget is closed, the new balance appears on restart, but the graph cannot place that change at a precise time or infer its peak rate.
+
 | Level | Draw or interval value |
 | --- | ---: |
-| Idle | no meaningful balance change |
+| No Change | no meaningful balance change |
 | Light | under 15 credits |
 | Moderate | 15 to under 60 credits |
 | Heavy | 60 to under 150 credits |

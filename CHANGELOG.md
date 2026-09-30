@@ -6,6 +6,7 @@ All notable changes to Codex Usage Widget will be recorded here.
 
 - Reset recent-draw and graph calculations to the current weekly allowance window so older credit spending cannot hide new allowance usage.
 - Restore missing seven-day display history from the local CSV log when the compact history file has fallen behind.
+- Distinguish an unchanged account meter and an untimed gap from live task inactivity in the widget labels.
 - Clarify what the Idle indicator can and cannot detect.
 
 ## 1.0.0 — 2026-09-23

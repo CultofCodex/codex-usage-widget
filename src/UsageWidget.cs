@@ -1002,6 +1002,7 @@ namespace CodexUsageWidget
             {
                 using (var pen = new Pen(Color.FromArgb(65, 72, 86), 1.5f * VisualScale))
                     e.Graphics.DrawLine(pen, plot.Left, plot.Top + plot.Height / 2, plot.Right, plot.Top + plot.Height / 2);
+                DrawEmptyState(e.Graphics, plot, "Collecting samples");
                 return;
             }
 
@@ -1012,6 +1013,7 @@ namespace CodexUsageWidget
             bool hasActivity = max > 0.0001;
             if (!hasActivity) max = 1;
             else max *= 1.08;
+            if (!hasActivity) DrawEmptyState(e.Graphics, plot, "No timed draw in window");
 
             var points = new List<PointF>();
             for (int i = 0; i < recent.Count; i++)
@@ -1044,6 +1046,13 @@ namespace CodexUsageWidget
                         e.Graphics.DrawLine(pen, points[i - 1], points[i]);
                 }
             }
+        }
+
+        private void DrawEmptyState(Graphics graphics, RectangleF plot, string message)
+        {
+            using (var brush = new SolidBrush(Color.FromArgb(112, 122, 140)))
+            using (var font = new Font("Segoe UI", 8.5f * VisualScale, FontStyle.Regular, GraphicsUnit.Pixel))
+                graphics.DrawString(message, font, brush, plot.Left + ScaleValue(2), plot.Top + ScaleValue(2));
         }
 
         private void DrawLegend(Graphics graphics)
@@ -1214,7 +1223,7 @@ namespace CodexUsageWidget
 
             Controls.Add(new Panel { Location = new Point(18, 231), Size = new Size(186, 1), BackColor = Color.FromArgb(48, 52, 62) });
 
-            Controls.Add(NewLabel("RECENT DRAW", 18, 243, 110, 17, 10.5f, FontStyle.Bold, _muted));
+            Controls.Add(NewLabel("LAST TIMED DRAW", 18, 243, 186, 17, 10.5f, FontStyle.Bold, _muted));
             _burnBadge = NewLabel("LEARNING", 18, 263, 92, 24, 10.5f, FontStyle.Bold, _purple);
             _burnBadge.TextAlign = ContentAlignment.MiddleCenter;
             _burnBadge.BackColor = Color.FromArgb(42, 38, 60);
@@ -1421,7 +1430,7 @@ namespace CodexUsageWidget
 
             UpdateCountdown();
             BurnMetrics burn = BurnCalculator.Calculate(samples, DateTime.UtcNow);
-            _burnBadge.Text = burn.Level;
+            _burnBadge.Text = burn.Level == "IDLE" ? "NO CHANGE" : burn.Level;
             _burnBadge.ForeColor = burn.Color;
             _burnBadge.BackColor = Blend(_background, burn.Color, 0.18f);
             _burnValue.Text = burn.DisplayRate;
